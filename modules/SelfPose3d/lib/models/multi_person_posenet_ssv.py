@@ -83,9 +83,10 @@ class MultiPersonPoseNetSSV(nn.Module):
         return face_images
     
     def _cal_distance(self, root, distance):
-        if distance is None:
+        if distance is None or distance == 0:
             return True
-        return torch.norm(root).item()*1000 < distance
+        d = torch.norm(root).item()
+        return torch.norm(root).item() < distance
 
     def forward(
         self,
@@ -118,7 +119,7 @@ class MultiPersonPoseNetSSV(nn.Module):
             index = pred[:, n, 0, 3] >= 0
             if torch.sum(index) > 0:
                 # grid_center shape : (b, n, 5), (1, 10, 5)
-                if (distance > 0) and self._cal_distance(grid_centers[:, n, 3:], distance) == False:
+                if self._cal_distance(grid_centers[:, n, :2], distance) == False:
                     grid_centers[:, n, 3] = 1
                     pred[:, n, :, 3] = 1
                     continue
