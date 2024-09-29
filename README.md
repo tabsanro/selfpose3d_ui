@@ -102,3 +102,39 @@ for view in views1:
     heatmaps = self.backbone(view)
     all_heatmaps.append(heatmaps)
 ```
+- 각 카메라 view로 부터 히트맵을 생성합니다.
+- all_heatmaps = (카메라 수, 인물의 관절수(15), 히트맵 w, 히트맵 h)
+
+### root_net
+```python
+_, _, _, grid_centers = self.root_net(all_heatmaps, meta1) # 2. 3D root 위치 추론 단계
+```
+- 영상 속 인물들의 대략적인 3D 위치를 반환합니다.
+- grid_centers = ( batch_size, max_people(10), (x, y, z, 0/-1 (flag), confidencr (0~1 float) ) )
+
+### LoD condition
+```python
+for n in range(self.num_cand): # root는 곧 인물의 위치를 뜻합니다. root 별로 pose_net을 수행할지 말지 결정합니다.
+    index = pred[:, n, 0, 3] >= 0
+    if torch.sum(index) > 0:
+        if self._cal_distance(grid_centers[:, n, :2], distance) == False: # 3. LoD 설정을 위해 root 위치와 distance 값을 비교해 pose_net을 수행할지 결정합니다.
+            grid_centers[:, n, 3] = 1
+            pred[:, n, :, 3] = 1
+            continue
+```
+- root 의 x,y 위치를 이용해 ROI 원점과의 거리를 측정합니다. distance 값보다 안쪽이면 pose_net을 진행하고 바깥이면 스킵합니다.
+- distance 값은 UI를 통해 업데이트 됩니다.
+
+### pose_net
+```python
+single_pose = self.pose_net(all_heatmaps, meta1, grid_centers[:, n]) # 4. 조건을 만족하면 pose_net을 통해 pose를 추정합니다.
+if min(single_pose[:,8,2], single_pose[:,14,2]) < 0 or min(single_pose[:,8,2], single_pose[:,14,2]) > 120:
+    grid_centers[:, n, 3] = -1
+    pred[:, n, :, 3] = -1
+    continue
+pred[:, n, :, 0:3] = single_pose.detach()
+```
+
+- ROI 영역 안에 있는 root 값을 토대로 pose_net을 진행합니다.
+- 모든 인물들의 pose 정보를 pred에 저장합니다.
+- pred = (batch_size, max_people(10), num_joints(15), 5 (x, y, z, -1/0/1 (flag), confidence(0~1 float )))
