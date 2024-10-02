@@ -7,4 +7,3 @@ opencv-contrib-python-headless
 numpy
 matplotlib
 easydict
-pyrealsense2

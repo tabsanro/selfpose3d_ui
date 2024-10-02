@@ -12,7 +12,6 @@ from modules.focus.dataset import FOCUSDataset as dataset
 from modules.SelfPose3d.lib.models.multi_person_posenet_ssv import get_multi_person_pose_net
 from modules.SelfPose3d.lib.core.config import config as sp3d_config
 from modules.SelfPose3d.lib.core.config import update_config as update_sp3d_config
-from modules.realsense.realsense import set_pipelines
 
 CWD = os.getcwd()
 
@@ -163,10 +162,6 @@ def main():
 
     sources, calib_path = get_sources_and_calibs(focus_config)
     pipelines = None
-    if args.webcam:
-        pipelines = set_pipelines(args.webcam_info)
-    # webcam_info = r"/home/zzol/FOCUS-1/modules/realsense/realsense_info.json"
-    # pipelines = set_pipelines(webcam_info)
     
     # Set CUDA device
     gpus = [0]
