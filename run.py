@@ -9,7 +9,6 @@ import torch
 import torchvision.transforms as transforms
 from tqdm import tqdm
 import threading
-from PyQt5 import QtWidgets, QtCore
 
 from configs.config import config as focus_config
 from configs.config import update_config as update_focus_config
@@ -202,16 +201,11 @@ def main():
         ),
         focus_config.MODEL.POSENET.CKPT,
     )
-    
-    # visualize
-    app = QtWidgets.QApplication(sys.argv)
-    mainWindow = PlotWidget()
-    mainWindow.show()
 
     # Inference
     for origin_frames, transed_frames, meta in (pbar := tqdm(data_loader)):
         # Update distance
-        distance = mainWindow.pose_updater.distance
+        distance = None
         
         # Set Results
         results = [] # 사람 수 만큼 결과 저장
@@ -243,11 +237,6 @@ def main():
             else:
                 temp_dict['pred'] = None
             results.append(temp_dict)
-
-        mainWindow.pose_updater.update_pose(results)
-
-        QtCore.QCoreApplication.processEvents()
-    sys.exit(app.exec_())
 
 if __name__ == '__main__':
     main()

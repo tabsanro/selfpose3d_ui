@@ -1,7 +1,7 @@
 tqdm
 gdown
 json-tricks
-torch
+torch==1.9.0
 opencv-python
 prettytable
 scipy
@@ -25,6 +25,5 @@ fastapi
 uvicorn
 python-multipart
 opencv-contrib-python-headless
-PyQt5
 requests
 pyrealsense2
