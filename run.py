@@ -13,7 +13,6 @@ from modules.SelfPose3d.lib.models.multi_person_posenet_ssv import get_multi_per
 from modules.SelfPose3d.lib.core.config import config as sp3d_config
 from modules.SelfPose3d.lib.core.config import update_config as update_sp3d_config
 from modules.realsense.realsense import set_pipelines
-from modules.gui.plot_widget import PlotWidget, DISTANCE
 
 CWD = os.getcwd()
 
