@@ -1,14 +1,10 @@
 import os
-import sys
 import argparse
-import pickle
 from typing import List, Tuple, Union
 
-import requests
 import torch
 import torchvision.transforms as transforms
 from tqdm import tqdm
-import threading
 
 from configs.config import config as focus_config
 from configs.config import update_config as update_focus_config
