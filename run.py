@@ -164,9 +164,12 @@ def edge_inference(model, inputs, num_person):
     return results
 
 @torch.no_grad()
-def main():
-    parser = get_parser()
-    args = parser.parse_args()
+def main(default_args=None):
+    if default_args is not None:
+        args = argparse.Namespace(**default_args)
+    else:
+        parser = get_parser()
+        args = parser.parse_args()
     # Update config
     # focus_config_path = 'configs/focus.yaml'
     update_focus_config(args.cfg_focus)
@@ -258,4 +261,9 @@ def main():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    main()
+    defualt_args={
+        'cfg_focus': 'configs/focus.yaml',
+        'webcam': False,
+        'webcam_info': None,
+    }
+    main(default_args=defualt_args)
