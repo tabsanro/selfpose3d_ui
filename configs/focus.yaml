@@ -30,8 +30,8 @@ CONFIG:
 
 CAMERA:
   SOURCES: "modules/SelfPose3d/data0705/hdVideo"
-  START_FRAME: 146
-  END_FRAME: NULL
+  START_FRAME: 2000
+  END_FRAME: 1046
   MAX_CAMERAS: 100
 
 # lod

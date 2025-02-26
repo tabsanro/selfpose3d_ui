@@ -1,11 +1,11 @@
 tqdm
 gdown
 json-tricks
-torch
-opencv-python
+torch==2.4.1
+opencv-python==4.10.0.84
 prettytable
 scipy
-torchvision
+torchvision==0.19.1
 numpy==1.26.4
 matplotlib
 easydict
@@ -20,7 +20,7 @@ lapx>=0.5.2
 confluent_kafka
 pillow
 gdown
-tensorrt==10.1.0
+tensorrt==10.4.0
 fastapi
 uvicorn
 python-multipart

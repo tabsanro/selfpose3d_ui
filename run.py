@@ -25,7 +25,7 @@ CWD = os.getcwd()
 def get_parser():
     parser = argparse.ArgumentParser(description="PyTorch AISL Inference")
     parser.add_argument("--cfg_focus", default='configs/focus.yaml', help="experiment configure file name", type=str)
-    parser.add_argument("--cfg_sp3d", default='modules/SelfPose3d/config/cam4_posenet.yaml', help="experiment configure file name", type=str)
+    # parser.add_argument("--cfg_sp3d", default='modules/SelfPose3d/config/cam4_posenet.yaml', help="experiment configure file name", type=str)
     parser.add_argument("--source_folder", default=None, help="source folder name", type=str)
     parser.add_argument("--webcam", type=bool, default=False, help="If set, the program will use webcam.")
     args, rest = parser.parse_known_args()
@@ -116,9 +116,16 @@ def post_process(preds_3d, grid_centers, face_images):
     
     return preds_3d, grid_centers, face_images_tensor, num_person, lod_list
 
-def load_model(model, ckpt_path):
+def load_model(model, ckpt_path, sp3d_config):
     model = torch.nn.DataParallel(model, device_ids=[0]).cuda()
-    model.module.load_state_dict(torch.load(ckpt_path), strict=False)
+    state_dict = torch.load(ckpt_path)
+    if sp3d_config.BACKBONE_MODEL == 'pose_resnet_dpi':
+        backbone_state_dict = torch.load('/home/dojan/workspace/selfpose3d_ui/models/pose_resnet_dpi_t4p5.pth.tar')
+        keys_to_remove = [key for key in state_dict.keys() if key.startswith('backbone')]
+        for key in keys_to_remove:
+            del state_dict[key]
+        state_dict.update(backbone_state_dict)
+    model.module.load_state_dict(state_dict, strict=False)  
     model.eval()
     return model
 
@@ -164,7 +171,7 @@ def main():
     # focus_config_path = 'configs/focus.yaml'
     update_focus_config(args.cfg_focus)
     # sp3d_config_path = 'modules/SelfPose3d/config/cam4_posenet.yaml'
-    update_sp3d_config(args.cfg_sp3d)
+    update_sp3d_config(focus_config.CONFIG.POSENET)
     # then you can use `focus_config` and `sp3d_config` as a global variable
 
     sources, calib_path = get_sources_and_calibs(focus_config)
@@ -201,8 +208,9 @@ def main():
             engine_path=os.path.join(CWD, 'modules', 'SelfPose3d', 'models', 'backbone.engine'),
         ),
         focus_config.MODEL.POSENET.CKPT,
+        sp3d_config,
     )
-    
+
     # visualize
     app = QtWidgets.QApplication(sys.argv)
     mainWindow = PlotWidget()

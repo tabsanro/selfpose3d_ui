@@ -14,6 +14,7 @@ import utils.cameras as cameras
 import cv2
 
 
+
 class ProposalLayerSoft(nn.Module):
     def __init__(self, cfg):
         super(ProposalLayerSoft, self).__init__()
@@ -89,7 +90,8 @@ class CuboidProposalNetSoft(nn.Module):
         # with torch.no_grad():
         # self.v2v_net.eval()
         if self.rootnet_roothm:
-            all_heatmaps_copy = [a[:, self.root_id, :, :][:, None].clone() for a in all_heatmaps]
+            # all_heatmaps_copy = [a[:, self.root_id, :, :][:, None].clone() for a in all_heatmaps]
+            all_heatmaps_copy = [a[:, self.root_id, :, :][:, None] for a in all_heatmaps]
         else:
             all_heatmaps_copy = all_heatmaps
 

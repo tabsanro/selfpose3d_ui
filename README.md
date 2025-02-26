@@ -3,6 +3,7 @@
 ## 데모 실행 방법
 ### requirements.txt
 ```
+conda create focus python==3.11.9
 pip install -r requirements.txt
 ```
 ### quick_setup.py

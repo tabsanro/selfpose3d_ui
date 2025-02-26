@@ -10,6 +10,7 @@ from __future__ import print_function
 import torch
 import torch.nn as nn
 from copy import deepcopy
+# from models import pose_resnet, pose_resnet_dpi
 from models import pose_resnet
 from models.cuboid_proposal_net_soft import CuboidProposalNetSoft
 from models.pose_regression_net import PoseRegressionNet
@@ -20,6 +21,14 @@ import cv2
 import utils.cameras as cameras
 from utils.transforms import get_affine_transform, get_scale
 
+
+from torch.utils.flop_counter import FlopCounterMode
+
+def get_flops(model, inp):
+    flop_counter = FlopCounterMode(mods=model, display=False, depth=None)
+    with flop_counter:
+        model(inp)
+    return flop_counter.get_total_flops()
 
 class MultiPersonPoseNetSSV(nn.Module):
     def __init__(self, backbone, cfg):
@@ -102,7 +111,7 @@ class MultiPersonPoseNetSSV(nn.Module):
 
         device = all_heatmaps[0].device
         batch_size = all_heatmaps[0].shape[0]
-
+        
         _, _, _, grid_centers = self.root_net(all_heatmaps, meta1)
 
         pred = torch.zeros(batch_size, self.num_cand, self.num_joints, 5, device=device)
@@ -143,5 +152,6 @@ def  get_multi_person_pose_net(cfg, is_train=True, tensorrt=False, engine_path=N
         backbone = EngineModel(engine_path, copy=True)
     else:
         backbone = eval(cfg.BACKBONE_MODEL + ".get_pose_net")(cfg, is_train=is_train)
+        print(cfg.BACKBONE_MODEL)
     model = MultiPersonPoseNetSSV(backbone, cfg)
     return model

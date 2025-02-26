@@ -12,6 +12,7 @@ import sys
 # print(sys.path)  # test
 
 import models.pose_resnet
+# import models.pose_resnet_dpi
 import models.v2v_net
 import models.project_layer
 import models.cuboid_proposal_net_soft

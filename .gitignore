@@ -16,6 +16,8 @@ integrated model/outputs/
 integrated model/models/
 integrated model/tools/
 results/
+temp*
+models*
 
 PoC.zip
 PoC/
