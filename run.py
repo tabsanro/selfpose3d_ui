@@ -164,12 +164,9 @@ def edge_inference(model, inputs, num_person):
     return results
 
 @torch.no_grad()
-def main(default_args=None):
-    if default_args is not None:
-        args = argparse.Namespace(**default_args)
-    else:
-        parser = get_parser()
-        args = parser.parse_args()
+def main():
+    parser = get_parser()
+    args = parser.parse_args()
     # Update config
     # focus_config_path = 'configs/focus.yaml'
     update_focus_config(args.cfg_focus)
@@ -261,9 +258,12 @@ def main(default_args=None):
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    defualt_args={
-        'cfg_focus': 'configs/focus.yaml',
-        'webcam': False,
-        'webcam_info': None,
-    }
-    main(default_args=defualt_args)
+    default_argv=[
+        '--cfg_focus', 'configs/focus.yaml',
+        '--webcam', 'False',
+        '--webcam_info', None,
+    ]
+    # CLI 인자가 없을 때 기본 argv를 사용하도록 함
+    if len(sys.argv) == 1:
+        sys.argv.extend(default_argv)
+    main()
