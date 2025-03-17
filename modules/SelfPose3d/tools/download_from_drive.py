@@ -8,23 +8,23 @@ PWD = osp.dirname(osp.abspath(__file__))
 
 # dataset google drive file id
 video_ids = {
-    'hd_00_01.mp4': '1exSVoAYuEL6EJA2x2rjtHO9vqD6IZj3o',
-    'hd_00_02.mp4': '1fBzgSuxfSNCwTxNv-Jyn26U6HmsIm-ms',
-    'hd_00_03.mp4': '1-8zncn5IzS17ojfObnryyaHxrkt78aHX',
-    'hd_00_04.mp4': '1KdTKLFV67PnfAGk9ePeUGGwdRIyn0De8'
+    'hd_00_01.mp4': '1KkdoIXyxKFbsh8NYHyaGgvtz3r6qsr6I',
+    'hd_00_02.mp4': '1S1QibbEYD0JAMzwt5Zl1IwUuNYNb8z2O',
+    'hd_00_03.mp4': '1s7jPNvglf_iH1rabsSve-POiK57mbz7-',
+    'hd_00_04.mp4': '1x1q-2uGuGV1xRWvA-AZ19g8ZXsPcsBHx'
 }
 
 calibration_ids = {
-    'camera1.pkl': '1YN43TzV-KprwBs2m4dl2pUfxdfSeqom5',
-    'camera2.pkl': '17xVFyCikpykltceH6PfdNR5Vgl9rNxQp',
-    'camera3.pkl': '1rM6SmUdzRjFcaAjuus7ujYqelxfdhLFY',
-    'camera4.pkl': '1H4II88TPcI0y4z0uMDSaJ2lKFCQws9zi'
+    'camera1.pkl': '1STmgz9z6923DwFCuJ4QNaKgtMTRe7QcO',
+    'camera2.pkl': '1eoeyJgZwOvTBMWwIoGb_QHW2xALFvKpF',
+    'camera3.pkl': '12--O4zXge5qMNZCfCBZ9wTnuMN-i_Mrk',
+    'camera4.pkl': '1mTmLY60Wc0eunuUAEKHJIyKNfW427Yvd'
 }
 
 model_ids = {
-    'POC_posenet.pth.tar': '1w-7HwZSFcKt6SioETopjA7Fd4-OQEO-I',
-    'backbone_32.engine': '1NoJqA8JGRVqq7NBTZQQcSOYBhfrjsjF_',
-    'backbone.engine': '1pwwsMJ0oWr-izJ1oss1tMLZMddkCdJlI'  
+    'POC_posenet.pth.tar': '1q3D8VWAvR6fBcQEHRsFKL3nx1EJYwCaQ',
+    # 'backbone_32.engine': '1NoJqA8JGRVqq7NBTZQQcSOYBhfrjsjF_',
+    # 'backbone.engine': '1pwwsMJ0oWr-izJ1oss1tMLZMddkCdJlI'  
 }
 
 def download_from_google_drive(file_id, output_path):
