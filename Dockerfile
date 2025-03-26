@@ -6,6 +6,15 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libglib2.0-0 \
     libusb-1.0-0 \
+    libxcb-xinerama0 \
+    libxcb1 \
+    libx11-xcb1 \
+    libxext6 \
+    libxrender1 \
+    libxi6 \
+    libxtst6 \
+    libqt5gui5 \
+    libqt5widgets5 \
     python3-pip && \
     rm -rf /var/lib/apt/lists/*
 
