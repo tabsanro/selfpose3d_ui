@@ -38,7 +38,6 @@ class MultiPersonPoseNetSSV(nn.Module):
         self.root_net = CuboidProposalNetSoft(cfg)
         self.num_joints = cfg.NETWORK.NUM_JOINTS
         self.num_cand = cfg.MULTI_PERSON.MAX_PEOPLE_NUM
-        self.image_size = (256, 256)
         self.crop_bound = 'face'
 
     def _2d_projection(self, pose_3d, meta):
@@ -146,8 +145,8 @@ class MultiPersonPoseNetSSV(nn.Module):
         return pred, pred_2d, all_heatmaps, grid_centers, crop_face_images
 
 
-def  get_multi_person_pose_net(cfg, is_train=True, tensorrt=False, engine_path=None):
-    if tensorrt:
+def  get_multi_person_pose_net(cfg, is_train=False, is_trt=False, engine_path=None):
+    if is_trt:
         from .engine_model import EngineModel
         backbone = EngineModel(engine_path, copy=True)
     else:

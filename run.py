@@ -14,6 +14,7 @@ from PyQt5 import QtWidgets, QtCore
 from configs.config import config as focus_config
 from configs.config import update_config as update_focus_config
 from modules.focus.dataset import FOCUSDataset as dataset
+from modules.focus.tensorrt import export_tensorrt, load_tensorrt_model
 from modules.SelfPose3d.lib.models.multi_person_posenet_ssv import get_multi_person_pose_net
 from modules.SelfPose3d.lib.core.config import config as sp3d_config
 from modules.SelfPose3d.lib.core.config import update_config as update_sp3d_config
@@ -27,6 +28,7 @@ def get_parser():
     parser.add_argument("--cfg_focus", default='configs/focus.yaml', help="experiment configure file name", type=str)
     # parser.add_argument("--cfg_sp3d", default='modules/SelfPose3d/config/cam4_posenet.yaml', help="experiment configure file name", type=str)
     parser.add_argument("--source_folder", default=None, help="source folder name", type=str)
+    parser.add_argument("--tensorrt", type=bool, default=False, help="If set, the program will use tensorrt.")
     parser.add_argument("--webcam", type=bool, default=False, help="If set, the program will use webcam.")
     args, rest = parser.parse_known_args()
     if args.webcam:
@@ -198,18 +200,22 @@ def main():
         batch_size=1,
         shuffle=False,
     )
-    
-    # load model
-    pose_model = load_model(
-        get_multi_person_pose_net(
-            sp3d_config,
-            is_train=False,
-            tensorrt=focus_config.MODEL.POSENET.TENSORRT,
-            engine_path=os.path.join(CWD, 'modules', 'SelfPose3d', 'models', 'backbone.engine'),
-        ),
-        focus_config.MODEL.POSENET.CKPT,
+
+    temp_model = get_multi_person_pose_net(
         sp3d_config,
+        is_train=False,
     )
+    temp_model = torch.nn.DataParallel(temp_model, device_ids=[0]).cuda()
+    temp_model.module.load_state_dict(torch.load(focus_config.MODEL.POSENET.CKPT))
+    temp_model = temp_model.eval()
+
+    if args.tensorrt:
+        tensorrt_dir = os.path.join(focus_config.MODEL.POSENET.CKPT.split(".")[0], 'engine')
+        if not os.path.isdir(tensorrt_dir):
+            export_tensorrt(temp_model, tensorrt_dir, sp3d_config)
+        pose_model = load_tensorrt_model(temp_model, tensorrt_dir)
+    else:
+        pose_model = temp_model
 
     # visualize
     app = QtWidgets.QApplication(sys.argv)
@@ -260,8 +266,7 @@ def main():
 if __name__ == '__main__':
     default_argv=[
         '--cfg_focus', 'configs/focus.yaml',
-        '--webcam', 'False',
-        '--webcam_info', None,
+        '--tensorrt', 'True',
     ]
     # CLI 인자가 없을 때 기본 argv를 사용하도록 함
     if len(sys.argv) == 1:

@@ -3,6 +3,7 @@
 # Licensed under the MIT License.
 # ------------------------------------------------------------------------------
 
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -102,6 +103,7 @@ class EncoderDecorder(nn.Module):
         x = self.decoder_res2(x)
         x = self.decoder_upsample2(x)
         x = x + skip_x2
+        x = torch.add(x, skip_x2)
 
         x = self.decoder_res1(x)
         x = self.decoder_upsample1(x)

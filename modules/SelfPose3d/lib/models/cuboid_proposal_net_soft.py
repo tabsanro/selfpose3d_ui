@@ -122,7 +122,7 @@ class CuboidProposalNetSoft(nn.Module):
             self.cube_size,
             flip_xcoords=flip_xcoords,
         )
-
+        
         root_cubes = self.v2v_net(initial_cubes)
         root_cubes = root_cubes.squeeze(1)
         grid_centers = self.proposal_layer(root_cubes, meta, grids)

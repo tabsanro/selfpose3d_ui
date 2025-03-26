@@ -8,6 +8,7 @@ sys.path.append('modules')
 # from .camera import Camera, get_sources_and_calibs
 from .dataset import FOCUSDataset
 from .get_frames import get_frames
+from .tensorrt import export_tensorrt, load_tensorrt_model
 # from .kafka_consumer import KafkaConsumer
 # from .kafka_producer import KafkaProducer
 # from .pose_model import PoseModel

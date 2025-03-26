@@ -1,12 +1,8 @@
 import torch
-from torch2trt import torch2trt
+from torch2trt import torch2trt, TRTModule
 import os
 
-def export_tensorrt(model, ckpt, cfg):
-    output_dir = os.path.join(ckpt.split(".")[0], 'engine')
-    if os.path.isdir(output_dir):
-        return
-    
+def export_tensorrt(model, output_dir, cfg):
     print("Exporting Model to TensorRT engine...")
 
 
@@ -28,3 +24,18 @@ def export_tensorrt(model, ckpt, cfg):
     torch.save(pose_v2v_net_trt.state_dict(), os.path.join(output_dir, 'pose_v2v_net.pth'))
     print("Exporting Model to TensorRT engine... Done")
     
+def load_tensorrt_model(model, tensorrt_dir):
+    print("Loading TensorRT model...")
+    backbone = TRTModule()
+    root_v2v_net = TRTModule()
+    pose_v2v_net = TRTModule()
+
+    backbone.load_state_dict(torch.load(os.path.join(tensorrt_dir, 'backbone.pth')))
+    root_v2v_net.load_state_dict(torch.load(os.path.join(tensorrt_dir, 'root_v2v_net.pth')))
+    pose_v2v_net.load_state_dict(torch.load(os.path.join(tensorrt_dir, 'pose_v2v_net.pth')))
+
+    model.module.backbone = backbone
+    model.module.root_net.v2v_net = root_v2v_net
+    model.module.pose_net.v2v_net = pose_v2v_net
+    print("Loading TensorRT model... Done")
+    return model
