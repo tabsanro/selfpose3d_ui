@@ -18,6 +18,7 @@ integrated model/tools/
 results/
 temp*
 models*
+.vscode/*
 
 PoC.zip
 PoC/

@@ -1,24 +1,48 @@
 # Selfpose3d UI
 
 ## 데모 실행 방법
-### requirements.txt
+### quick setup
 ```
-conda create focus python==3.11.9
-pip install -r requirements.txt
-```
-### quick_setup.py
-```
-python quick_setup.py
+conda create -n selfpose3d_ui python==3.11.11 -y
+conda activate selfpose3d_ui
+bash install.sh
 ```
 ### run demo
 ```
+# QT UI 기반 실행
 python poc_ui.py
 ```
 또는
 ```
+# 기본 설정
 python run.py
+
+# config 파일 설정
+python run.py --cfg_focus configs/focus.yaml
+
+# 비디오+캘리브레이션 데이터 폴더 설정
+python run.py --source_folder /workspace/selfpose3d_ui/modules/SelfPose3d/data_0705
+
+# 실시간 웹캠 실행
+python run.py --webcam
 ```
+
 로도 실행이 가능합니다.
+
+### data tree
+비디오+캘리브레이션 디렉토리 구조는 다음과 같아야 합니다.
+```
+${POSE_ROOT}
+|-- data
+    |-- calibration
+    |   |-- camera0.pkl
+    |   |-- ...
+    |   |-- camera4.pkl
+    |-- hdVideos
+    |   |-- hd_00_01.mp4
+    |   |-- ...
+    |   |-- hd_00_04.mp4
+```
 
 ## 모델 구조 설명
 ![](img/voxelpose.png)
