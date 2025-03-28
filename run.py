@@ -162,9 +162,9 @@ def main():
                 temp_dict['pred'] = None
             results.append(temp_dict)
 
-        # mainWindow.pose_updater.update_pose(results)
+        mainWindow.pose_updater.update_pose(results)
 
-        # QtCore.QCoreApplication.processEvents()
+        QtCore.QCoreApplication.processEvents()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
