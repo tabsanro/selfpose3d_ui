@@ -9,20 +9,13 @@ from __future__ import print_function
 
 import torch
 import torch.nn as nn
-from copy import deepcopy
-# from models import pose_resnet, pose_resnet_dpi
 from models import pose_resnet
 from models.cuboid_proposal_net_soft import CuboidProposalNetSoft
 from models.pose_regression_net import PoseRegressionNet
-import torch.nn.functional as F
-import numpy as np
-import cv2
-
-import utils.cameras as cameras
-from utils.transforms import get_affine_transform, get_scale
-
 
 from torch.utils.flop_counter import FlopCounterMode
+
+stream = torch.cuda.Stream()
 
 def get_flops(model, inp):
     flop_counter = FlopCounterMode(mods=model, display=False, depth=None)
@@ -42,7 +35,6 @@ class MultiPersonPoseNetSSV(nn.Module):
     def _cal_distance(self, root, distance):
         if distance is None or distance == 0:
             return True
-        d = torch.norm(root).item()
         return torch.norm(root).item() < distance
 
     def forward(
@@ -53,8 +45,10 @@ class MultiPersonPoseNetSSV(nn.Module):
     ):
         all_heatmaps = []
         for view in views1:
-            heatmaps = self.backbone(view)
-            all_heatmaps.append(heatmaps)
+            with torch.cuda.stream(stream):
+                heatmaps = self.backbone(view)
+                all_heatmaps.append(heatmaps)
+        torch.cuda.current_stream().wait_stream(stream)
 
         device = all_heatmaps[0].device
         batch_size = all_heatmaps[0].shape[0]
@@ -65,21 +59,23 @@ class MultiPersonPoseNetSSV(nn.Module):
         pred[:, :, :, 3:] = grid_centers[:, :, 3:].reshape(batch_size, -1, 1, 2)
 
         for n in range(self.num_cand):
-            index = pred[:, n, 0, 3] >= 0
-            if torch.sum(index) > 0:
-                # grid_center shape : (b, n, 5), (1, 10, 5)
-                if self._cal_distance(grid_centers[:, n, :2], distance) == False:
-                    grid_centers[:, n, 3] = 1
-                    pred[:, n, :, 3] = 1
-                    continue
-                single_pose = self.pose_net(all_heatmaps, meta1, grid_centers[:, n])
-                if min(single_pose[:,8,2], single_pose[:,14,2]) < 0 or min(single_pose[:,8,2], single_pose[:,14,2]) > 120:
-                    grid_centers[:, n, 3] = -1
-                    pred[:, n, :, 3] = -1
-                    continue
+            with torch.cuda.stream(stream):
+                index = pred[:, n, 0, 3] >= 0
+                if torch.sum(index) > 0:
+                    # grid_center shape : (b, n, 5), (1, 10, 5)
+                    if self._cal_distance(grid_centers[:, n, :2], distance) == False:
+                        grid_centers[:, n, 3] = 1
+                        pred[:, n, :, 3] = 1
+                        continue
+                    single_pose = self.pose_net(all_heatmaps, meta1, grid_centers[:, n])
+                    if min(single_pose[:,8,2], single_pose[:,14,2]) < 0 or min(single_pose[:,8,2], single_pose[:,14,2]) > 120:
+                        grid_centers[:, n, 3] = -1
+                        pred[:, n, :, 3] = -1
+                        continue
 
-                pred[:, n, :, 0:3] = single_pose.detach()
-                del single_pose
+                    pred[:, n, :, 0:3] = single_pose.detach()
+                    del single_pose
+        torch.cuda.current_stream().wait_stream(stream)
 
         return pred, all_heatmaps, grid_centers
 
@@ -89,7 +85,6 @@ def  get_multi_person_pose_net(cfg, is_train=False, is_trt=False, engine_path=No
         from .engine_model import EngineModel
         backbone = EngineModel(engine_path, copy=True)
     else:
-        backbone = eval(cfg.BACKBONE_MODEL + ".get_pose_net")(cfg, is_train=is_train)
-        print(cfg.BACKBONE_MODEL)
+        backbone = pose_resnet.get_pose_net(cfg, is_train=is_train)
     model = MultiPersonPoseNetSSV(backbone, cfg)
     return model

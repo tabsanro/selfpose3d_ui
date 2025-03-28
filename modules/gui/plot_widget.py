@@ -129,20 +129,20 @@ class PlotWidget(QtWidgets.QMainWindow):
                 z = single_pose['root'][2]
 
                 self.draw_cylinder(self.ax, [x, y, z], height=700, radius=100) 
+                continue
 
-            elif single_pose['root'][3] == 0:
-                x = single_pose['pred'][:, 0]
-                y = single_pose['pred'][:, 1]
-                z = single_pose['pred'][:, 2]
+            x = single_pose['pred'][:, 0]
+            y = single_pose['pred'][:, 1]
+            z = single_pose['pred'][:, 2]
 
-                self.ax.scatter(x, y, z, c='r', marker='o')
+            self.ax.scatter(x, y, z, c='r', marker='o')
 
-                for limb in LIMBS:
-                    joint1, joint2 = limb
-                    x_values = [single_pose['pred'][joint1][0], single_pose['pred'][joint2][0]]
-                    y_values = [single_pose['pred'][joint1][1], single_pose['pred'][joint2][1]]
-                    z_values = [single_pose['pred'][joint1][2], single_pose['pred'][joint2][2]]
-                    self.ax.plot(x_values, y_values, z_values, 'ro-')
+            for limb in LIMBS:
+                joint1, joint2 = limb
+                x_values = [single_pose['pred'][joint1][0], single_pose['pred'][joint2][0]]
+                y_values = [single_pose['pred'][joint1][1], single_pose['pred'][joint2][1]]
+                z_values = [single_pose['pred'][joint1][2], single_pose['pred'][joint2][2]]
+                self.ax.plot(x_values, y_values, z_values, 'ro-')
 
         self.ax.set_xlabel('X Label')
         self.ax.set_ylabel('Y Label')

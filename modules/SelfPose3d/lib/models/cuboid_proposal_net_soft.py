@@ -86,29 +86,6 @@ class CuboidProposalNetSoft(nn.Module):
             self.v2v_net = V2VNet(cfg.NETWORK.NUM_JOINTS, 1)
         self.proposal_layer = ProposalLayerSoft(cfg)
 
-    def get_grid_centres(self, all_heatmaps, meta, flip_xcoords):
-        # with torch.no_grad():
-        # self.v2v_net.eval()
-        if self.rootnet_roothm:
-            # all_heatmaps_copy = [a[:, self.root_id, :, :][:, None].clone() for a in all_heatmaps]
-            all_heatmaps_copy = [a[:, self.root_id, :, :][:, None] for a in all_heatmaps]
-        else:
-            all_heatmaps_copy = all_heatmaps
-
-        initial_cubes, grids = self.project_layer(
-            all_heatmaps_copy,
-            meta,
-            self.grid_size,
-            [self.grid_center],
-            self.cube_size,
-            flip_xcoords=flip_xcoords,
-        )
-        root_cubes = self.v2v_net(initial_cubes)
-        root_cubes = root_cubes.squeeze(1)
-        grid_centers = self.proposal_layer(root_cubes, meta, grids)
-
-        return root_cubes, grid_centers
-
     def forward(self, all_heatmaps, meta, flip_xcoords=None):
         all_heatmaps_copy = [
             a[:, self.root_id, :, :][:, None].clone() for a in all_heatmaps

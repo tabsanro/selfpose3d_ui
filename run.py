@@ -1,14 +1,10 @@
 import os
 import sys
 import argparse
-import pickle
 from typing import List, Tuple, Union
 
-import requests
 import torch
-import torchvision.transforms as transforms
 from tqdm import tqdm
-import threading
 from PyQt5 import QtWidgets, QtCore
 
 from configs.config import config as focus_config
@@ -28,8 +24,8 @@ def get_parser():
     parser.add_argument("--cfg_focus", default='configs/focus.yaml', help="experiment configure file name", type=str)
     # parser.add_argument("--cfg_sp3d", default='modules/SelfPose3d/config/cam4_posenet.yaml', help="experiment configure file name", type=str)
     parser.add_argument("--source_folder", default=None, help="source folder name", type=str)
-    parser.add_argument("--tensorrt", type=bool, default=False, help="If set, the program will use tensorrt.")
-    parser.add_argument("--webcam", type=bool, default=False, help="If set, the program will use webcam.")
+    parser.add_argument("--tensorrt", action="store_true", default=False, help="If set, the program will use tensorrt.")
+    parser.add_argument("--webcam", action="store_true", default=False, help="If set, the program will use webcam.")
     args, rest = parser.parse_known_args()
     if args.webcam:
         parser.add_argument("--webcam_info", type=str, default=None, help="Webcam info file path.")
@@ -90,8 +86,6 @@ def main():
     pipelines = None
     if args.webcam:
         pipelines = set_pipelines(args.webcam_info)
-    # webcam_info = r"/home/zzol/FOCUS-1/modules/realsense/realsense_info.json"
-    # pipelines = set_pipelines(webcam_info)
     
     # Set CUDA device
     gpus = [0]
@@ -117,7 +111,7 @@ def main():
         is_train=False,
     )
     temp_model = torch.nn.DataParallel(temp_model, device_ids=[0]).cuda()
-    temp_model.module.load_state_dict(torch.load(focus_config.MODEL.POSENET.CKPT))
+    temp_model.module.load_state_dict(torch.load(focus_config.MODEL.POSENET.CKPT, weights_only=False))
     temp_model = temp_model.eval()
 
     if args.tensorrt:
@@ -168,14 +162,15 @@ def main():
                 temp_dict['pred'] = None
             results.append(temp_dict)
 
-        mainWindow.pose_updater.update_pose(results)
+        # mainWindow.pose_updater.update_pose(results)
 
-        QtCore.QCoreApplication.processEvents()
+        # QtCore.QCoreApplication.processEvents()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
     default_argv=[
         '--cfg_focus', 'configs/focus.yaml',
+        '--source_folder', 'modules/SelfPose3d/data_0325',
         '--tensorrt',
     ]
     # CLI 인자가 없을 때 기본 argv를 사용하도록 함

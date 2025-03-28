@@ -30,9 +30,9 @@ def load_tensorrt_model(model, tensorrt_dir):
     root_v2v_net = TRTModule()
     pose_v2v_net = TRTModule()
 
-    backbone.load_state_dict(torch.load(os.path.join(tensorrt_dir, 'backbone.pth')))
-    root_v2v_net.load_state_dict(torch.load(os.path.join(tensorrt_dir, 'root_v2v_net.pth')))
-    pose_v2v_net.load_state_dict(torch.load(os.path.join(tensorrt_dir, 'pose_v2v_net.pth')))
+    backbone.load_state_dict(torch.load(os.path.join(tensorrt_dir, 'backbone.pth'), weights_only=False))
+    root_v2v_net.load_state_dict(torch.load(os.path.join(tensorrt_dir, 'root_v2v_net.pth'), weights_only=False))
+    pose_v2v_net.load_state_dict(torch.load(os.path.join(tensorrt_dir, 'pose_v2v_net.pth'), weights_only=False))
 
     model.module.backbone = backbone
     model.module.root_net.v2v_net = root_v2v_net
