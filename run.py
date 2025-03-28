@@ -140,31 +140,6 @@ def transform_image(image):
     ])
     return transform(image)
 
-def edge_inference(model, inputs, num_person):
-    # edge variables
-    w_set = [1, 1, 1]
-    nof = 2
-    cof = 1
-    tof = 1
-    # 0: 알고리즘에 대한 시간과 Partition point
-    # 3: cloud에서의 시간과 Partition point
-    # 4: edge에서의 시간과 Partition point
-    Algoritm_type = 0
-    final_index, final_time, partition_point, E_f_time, C_f_time, tr_f_time = time_point_calculator.sync_algorithm(Algoritm_type, num_person, w_set, nof, cof, tof)
-    print(f'\nPartition Algorithm Print\n{0} {1} {2} {3} {4} {5}\n'.format(final_index, final_time, partition_point, E_f_time, C_f_time, tr_f_time))
-    print(final_index, final_time, partition_point, E_f_time, C_f_time, tr_f_time)
-    
-    results = []
-    for idx, img in enumerate(inputs):
-        _, _, featuremap = model(
-            transform_image(img),
-            type='test_AFAD',
-            sp=0,
-            ep=partition_point[idx],
-        )
-        results.append((featuremap, partition_point[idx]))
-    return results
-
 @torch.no_grad()
 def main():
     parser = get_parser()
