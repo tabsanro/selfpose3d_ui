@@ -97,7 +97,7 @@ class WindowClass(QMainWindow, form_class):
         elif self.radioButton_2.isChecked():
             cmd_args = [
                 "--cfg_focus", self.config_path.text(),
-                "--webcam=True"
+                "--webcam",
                 "--webcam_info", self.source_path.text()
             ]
         elif self.radioButton_4.isChecked():

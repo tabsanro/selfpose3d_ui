@@ -70,7 +70,7 @@ class RecordWidget(QWidget):
         os.makedirs(calibration:=osp.join(self.path, "calibration"), exist_ok=True)
         # 비디오 기록자 설정 (1초에 15프레임)
         for i, (pipeline, params) in enumerate(self.pipelines.items()):
-            filename = osp.join(hdVideos, f'hd_00_{i:02d}.mp4')
+            filename = osp.join(hdVideos, f'hd_00_{(i+1):02d}.mp4')
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 코덱 설정
             self.video_writers[pipeline] = cv2.VideoWriter(filename, fourcc, 15.0, (1920, 1080))
 

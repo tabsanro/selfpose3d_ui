@@ -38,12 +38,7 @@ class MultiPersonPoseNetSSV(nn.Module):
         self.root_net = CuboidProposalNetSoft(cfg)
         self.num_joints = cfg.NETWORK.NUM_JOINTS
         self.num_cand = cfg.MULTI_PERSON.MAX_PEOPLE_NUM
-        self.crop_bound = 'face'
 
-
-
-
-    
     def _cal_distance(self, root, distance):
         if distance is None or distance == 0:
             return True
@@ -69,10 +64,6 @@ class MultiPersonPoseNetSSV(nn.Module):
         pred = torch.zeros(batch_size, self.num_cand, self.num_joints, 5, device=device)
         pred[:, :, :, 3:] = grid_centers[:, :, 3:].reshape(batch_size, -1, 1, 2)
 
-
-
-
-
         for n in range(self.num_cand):
             index = pred[:, n, 0, 3] >= 0
             if torch.sum(index) > 0:
@@ -86,7 +77,6 @@ class MultiPersonPoseNetSSV(nn.Module):
                     grid_centers[:, n, 3] = -1
                     pred[:, n, :, 3] = -1
                     continue
-
 
                 pred[:, n, :, 0:3] = single_pose.detach()
                 del single_pose

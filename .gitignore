@@ -1,8 +1,5 @@
 # FOCUS .gitignore
 data/
-modules/SelfPose3d/data_0705/
-modules/SelfPose3d/models/
-modules/SelfPose3d/output/
 results/
 temp*
 models*

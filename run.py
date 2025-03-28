@@ -36,43 +36,19 @@ def get_parser():
     return parser
 
 # Factory method
-def get_sources_and_calibs(cfg) -> Union[Tuple[List[str], str], Tuple[None, None]]:
-    if cfg.WEBCAM:
+def get_sources_and_calibs(cfg, args) -> Union[Tuple[List[str], str], Tuple[None, None]]:
+    if args.webcam:
         return None, None
-    elif cfg.SOURCE_FOLDER_NAME is None:
+    elif args.source_folder is None:
         sources = [os.path.join('modules', 'SelfPose3d', 'data_0705', 'hdVideos', 'hd_00_{:02d}.mp4'.format(i+1)) for i in range(cfg.NUM_SOURCES)]
         calib_path = os.path.join('modules', 'SelfPose3d', 'data_0705', 'calibration')
         return sources, calib_path
     else:
-        sources = [os.path.join('data', 'focus-dataset', 'data', cfg.SOURCE_FOLDER_NAME, 'hdVideos', 'hd_00_{:02d}.mp4'.format(i+1)) for i in range(cfg.NUM_SOURCES)]
-        calib_path = os.path.join('data', 'focus-dataset', 'data', cfg.SOURCE_FOLDER_NAME, 'calibration')
+        sources = [os.path.join(args.source_folder, 'hdVideos', 'hd_00_{:02d}.mp4'.format(i+1)) for i in range(cfg.NUM_SOURCES)]
+        calib_path = os.path.join(args.source_folder, 'calibration')
         return sources, calib_path
 
-def zero_padding(image, target_size=(224, 224)):
-    # 특이하게 tensor 주제에 np마냥 shape이 (h, w, c)로 나옴
-    # 보통 tensor는 (c, h, w)로 나옴
-    # 그래서 순서 바꿀거임
-    # image = image.permute(2, 0, 1)
-    image = torch.from_numpy(image).cuda().permute(2, 0, 1)
-    
-    _, h, w = image.shape
-    target_h, target_w = target_size
-    
-    pad_h = target_h - h
-    pad_w = target_w - w
-    
-    pad_top = pad_h // 2 if pad_h > 0 else 0
-    pad_bottom = pad_h - pad_top if pad_h > 0 else 0
-    pad_left = pad_w // 2 if pad_w > 0 else 0
-    pad_right = pad_w - pad_left if pad_w > 0 else 0
-    
-    padding = (pad_left, pad_right, pad_top, pad_bottom)
-    
-    padded_image = torch.nn.functional.pad(image, padding, mode='constant', value=0)
-    
-    return padded_image
-
-def post_process(preds_3d, grid_centers, face_images):
+def post_process(preds_3d, grid_centers):
     # POSE
     # -1 is not person
     # 0 is in lod2
@@ -99,59 +75,18 @@ def post_process(preds_3d, grid_centers, face_images):
         grid_centers = None
     else:
         grid_centers = grid_centers.squeeze(0).view(-1, 5).detach().cpu().numpy()
-
-    # FACE
-    face_images_tensor = []
-    for n in range(len(face_images)):   # n: persons
-        person_tensors = []
-        for b in range(len(face_images[n])):    # b: batch
-            batch_tensors = []
-            for c in range(len(face_images[n][b])):   # c: cameras
-                padded_img = zero_padding(face_images[n][b][c])
-                batch_tensors.append(padded_img)
-            person_tensors.append(torch.stack(batch_tensors).cuda())
-        face_images_tensor.append(torch.stack(person_tensors).cuda())
     
-    if face_images_tensor != []:
-        face_images_tensor = torch.stack(face_images_tensor).cuda()
-        face_images_tensor = face_images_tensor.squeeze(1)  # delete batch dim
-    
-    return preds_3d, grid_centers, face_images_tensor, num_person, lod_list
-
-def load_model(model, ckpt_path, sp3d_config):
-    model = torch.nn.DataParallel(model, device_ids=[0]).cuda()
-    state_dict = torch.load(ckpt_path)
-    if sp3d_config.BACKBONE_MODEL == 'pose_resnet_dpi':
-        backbone_state_dict = torch.load('/home/dojan/workspace/selfpose3d_ui/models/pose_resnet_dpi_t4p5.pth.tar')
-        keys_to_remove = [key for key in state_dict.keys() if key.startswith('backbone')]
-        for key in keys_to_remove:
-            del state_dict[key]
-        state_dict.update(backbone_state_dict)
-    model.module.load_state_dict(state_dict, strict=False)  
-    model.eval()
-    return model
-
-def transform_image(image):
-    image = image.float()/255.0
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        # transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-    return transform(image)
+    return preds_3d, grid_centers, num_person, lod_list
 
 @torch.no_grad()
 def main():
     parser = get_parser()
     args = parser.parse_args()
     # Update config
-    # focus_config_path = 'configs/focus.yaml'
     update_focus_config(args.cfg_focus)
-    # sp3d_config_path = 'modules/SelfPose3d/config/cam4_posenet.yaml'
     update_sp3d_config(focus_config.CONFIG.POSENET)
-    # then you can use `focus_config` and `sp3d_config` as a global variable
 
-    sources, calib_path = get_sources_and_calibs(focus_config)
+    sources, calib_path = get_sources_and_calibs(focus_config, args)
     pipelines = None
     if args.webcam:
         pipelines = set_pipelines(args.webcam_info)
@@ -176,6 +111,7 @@ def main():
         shuffle=False,
     )
 
+    # set model
     temp_model = get_multi_person_pose_net(
         sp3d_config,
         is_train=False,
@@ -207,13 +143,12 @@ def main():
         # 사람 = {lod , root, pred, age, gender}
 
         # Pose Estimation
-        pred_3d, _, _, roots, face_images = pose_model(
-            raw_images=origin_frames,
+        pred_3d, _, roots = pose_model(
             views1=transed_frames,
             meta1=meta,
             distance=distance,
         )
-        pred_3d, roots, face_images, num_person, lod_list = post_process(pred_3d, roots, face_images)
+        pred_3d, roots, num_person, lod_list = post_process(pred_3d, roots)
         if roots is None:
             continue
         for num_roots in range(len(roots)):
@@ -241,7 +176,7 @@ def main():
 if __name__ == '__main__':
     default_argv=[
         '--cfg_focus', 'configs/focus.yaml',
-        '--tensorrt', 'True',
+        '--tensorrt',
     ]
     # CLI 인자가 없을 때 기본 argv를 사용하도록 함
     if len(sys.argv) == 1:
