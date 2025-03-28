@@ -92,13 +92,11 @@ class WindowClass(QMainWindow, form_class):
         if self.radioButton.isChecked():
             cmd_args = [
                 "--cfg_focus", self.config_path.text(),
-                "--cfg_sp3d", "modules/SelfPose3d/config/cam4_posenet.yaml",
                 "--source_folder", self.folder_path.text()
             ]
         elif self.radioButton_2.isChecked():
             cmd_args = [
                 "--cfg_focus", self.config_path.text(),
-                "--cfg_sp3d", "modules/SelfPose3d/config/cam4_posenet.yaml",
                 "--webcam=True"
                 "--webcam_info", self.source_path.text()
             ]

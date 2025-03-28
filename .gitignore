@@ -1,28 +1,12 @@
 # FOCUS .gitignore
 data/
-selfpose3d_models_pseudo_labels/
-selfpose3d_models_pseudo_labels.zip
-modules/mivolo/
 modules/SelfPose3d/data_0705/
-modules/SelfPose3d/data_aruco/
 modules/SelfPose3d/models/
 modules/SelfPose3d/output/
-zdump/
-integrated model/aisl_data/
-integrated model/configs/
-integrated model/lib/
-integrated model/mivolo/
-integrated model/outputs/
-integrated model/models/
-integrated model/tools/
 results/
 temp*
 models*
 .vscode/*
-
-PoC.zip
-PoC/
-240831_ResNet_AFAD_split_label_novalidation_weight_decay_Fine_tunning_2nd.pt
 
 # aisl_sim/result_1.pkl
 
@@ -189,6 +173,7 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
-tools/backbone.onnx
-tools/heatmaps.pkl
-tools/view.pkl
+*.pth
+*.pth.tar
+*.onnx
+*data_*
