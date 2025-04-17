@@ -75,7 +75,7 @@ class RecordWidget(QWidget):
             self.video_writers[pipeline] = cv2.VideoWriter(filename, fourcc, 15.0, (1920, 1080))
 
             # 카메라 캘리브레이션 피클 저장
-            with open(osp.join(calibration, f"camera{i}.pkl"), "wb") as f:
+            with open(osp.join(calibration, f"camera{i+1}.pkl"), "wb") as f:
                 pickle.dump(params, f)
         
 
