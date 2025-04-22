@@ -54,7 +54,7 @@ def get_frames(cfg, sources=None, pipelines=None) -> Generator[np.ndarray, None,
                     raise IOError(f'Failed to get color frame from camera {i}')
                 frame = np.asanyarray(color_frame.get_data())
                 frames.append(frame)
-            yield np.array(frames)
+            yield np.array(frames), None
     else:
         try:
             camera = Camera(cfg, sources)
@@ -65,8 +65,9 @@ def get_frames(cfg, sources=None, pipelines=None) -> Generator[np.ndarray, None,
             frames = []
             for cap in camera:
                 ret, frame = cap.read()
+                time_stamp = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
                 if ret:
                     frames.append(frame)
                 else:
                     raise IOError(f'Failed to read camera {cap}')
-            yield np.array(frames)
+            yield np.array(frames), time_stamp

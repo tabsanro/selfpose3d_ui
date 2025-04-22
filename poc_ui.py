@@ -109,7 +109,7 @@ class WindowClass(QMainWindow, form_class):
             print("Please select a mode")
             return
 
-        script_path = osp.join(base_dir, "run.py")
+        script_path = osp.join(base_dir, "run_gui.py")
         print("python", [script_path] + cmd_args)
         self.process.start("python", [script_path] + cmd_args)
 

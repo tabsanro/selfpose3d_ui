@@ -80,6 +80,7 @@ class POCdatasetCV2(IterableDataset):
             raw_images = []
             for cap in self.caps:
                 ret, data_numpy = cap.read()
+                frame_stamp = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
                 if not ret:
                     print(f"Failed to read image")
                     assert False
@@ -113,6 +114,6 @@ class POCdatasetCV2(IterableDataset):
                 }
                 meta.append(m)
                 
-            yield raw_images, inputs, meta
+            yield raw_images, inputs, meta, frame_stamp
         for cap in self.caps:
             cap.release()

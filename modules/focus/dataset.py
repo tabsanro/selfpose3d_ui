@@ -29,14 +29,14 @@ class FOCUSDataset(IterableDataset):
         return self
     
     def __next__(self):
-        frames = next(self.frames_generator, None)
+        frames, time_stamp = next(self.frames_generator, None)
         if frames is None:
             raise StopIteration
         # origin_frames = copy.deepcopy(frames)
         meta, transed_frames = self.get_meta_and_transed_frame(frames)
         if self.device == 'cuda':
             transed_frames = self.to_cuda(transed_frames)
-        return frames, transed_frames, meta
+        return frames, transed_frames, meta, time_stamp
 
     def to_cuda(self, transed_frames):
         transed_frames = [frame.cuda() for frame in transed_frames]
@@ -65,7 +65,7 @@ class FOCUSDataset(IterableDataset):
                 'center': center,
                 'scale': scale,
                 'rotation': rotation,
-                'camera': self.camera_data[i]
+                'camera': self.camera_data[i],
             })
             # tensor
             trans = get_affine_transform(center, scale, rotation, self.image_size)

@@ -28,3 +28,4 @@ opencv-contrib-python-headless
 PyQt5
 requests
 pyrealsense2
+pyzmq

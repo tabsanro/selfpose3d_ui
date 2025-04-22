@@ -136,7 +136,15 @@ class PlotWidget(QtWidgets.QMainWindow):
             z = single_pose['pred'][:, 2]
 
             self.ax.scatter(x, y, z, c='r', marker='o')
-
+            if single_pose['root'][3] == 2:
+                for limb in LIMBS:
+                    joint1, joint2 = limb
+                    x_values = [single_pose['pred'][joint1][0], single_pose['pred'][joint2][0]]
+                    y_values = [single_pose['pred'][joint1][1], single_pose['pred'][joint2][1]]
+                    z_values = [single_pose['pred'][joint1][2], single_pose['pred'][joint2][2]]
+                    self.ax.plot(x_values, y_values, z_values, 'bo-')
+                continue
+            
             for limb in LIMBS:
                 joint1, joint2 = limb
                 x_values = [single_pose['pred'][joint1][0], single_pose['pred'][joint2][0]]
