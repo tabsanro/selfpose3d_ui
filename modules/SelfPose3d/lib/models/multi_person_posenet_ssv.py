@@ -34,18 +34,28 @@ class MultiPersonPoseNetSSV(nn.Module):
         self.num_joints = cfg.NETWORK.NUM_JOINTS
         self.num_cand = cfg.MULTI_PERSON.MAX_PEOPLE_NUM
 
-    def _cal_distance(self, root, distance):
+    def _cal_root_distance(self, root, distance):
         if distance is None or distance == 0:
             return True
         return torch.norm(root).item() < distance
+    
+    def _cal_pose_roa_distance(self, pose, roa_distance):
+        if roa_distance is None or roa_distance == 0:
+            return False
+        center = torch.tensor([0, 0, 280], device=pose.device)
+        for i in range(15):
+            if torch.norm(pose[0][i] - center).item() < roa_distance:
+                return True
+        pass
 
     def forward(
         self,
         views1=None,
         meta1=None,
         distance=None,
+        roa_distance=None,
         tracking_id=None,
-        id_result=None,
+        reid_info=None,
     ):
         all_heatmaps = []
         for view in views1:
@@ -62,29 +72,30 @@ class MultiPersonPoseNetSSV(nn.Module):
         pred = torch.zeros(batch_size, self.num_cand, self.num_joints, 5, device=device)
         pred[:, :, :, 3:] = grid_centers[:, :, 3:].reshape(batch_size, -1, 1, 2)
 
-        if tracking_id:
-            if id_result:
-                num_views = len(views1)
-                roots_2d = np.zeros((num_views, self.num_cand, 2))
-                for n in range(num_views):
-                    cam = {}
-                    for k, v in meta1[n]['camera'].items():
-                        cam[k] = v[0]
-                    xy = cameras.project_pose(grid_centers[0, :, :3], cam)
-                    roots_2d[n, :] = xy.detach().cpu()
+        if reid_info:
+            reid = set([id_data["global_id"] for id_data in reid_info])
+            reid_count = len(reid)
+            num_views = len(views1)
+            roots_2d = np.zeros((num_views, self.num_cand, 2))
+            for n in range(num_views):
+                cam = {}
+                for k, v in meta1[n]['camera'].items():
+                    cam[k] = v[0]
+                xy = cameras.project_pose(grid_centers[0, :, :3], cam)
+                roots_2d[n, :] = xy.detach().cpu()
 
-                id_score = np.zeros((self.num_cand, 1))
-                for id_res in id_result:
-                    cam_num = id_res["cam"]
-                    bbox = id_res["bbox"] # xyxy
-                    id_root = np.array([(bbox[0]+bbox[2]) / 2, (bbox[1]+bbox[3]) / 2])
-                    for n in range(self.num_cand):
-                        l2 = np.linalg.norm(id_root - roots_2d[cam_num, n])
-                        id_score[n] += l2
+            id_score = np.zeros((self.num_cand, reid_count))
+            for id_res in reid_info:
+                cam_num = id_res["cam"]
+                bbox = id_res["bbox"] # xyxy
+                id_root = np.array([(bbox[0]+bbox[2]) / 2, (bbox[1]+bbox[3]) / 2])
+                for n in range(self.num_cand):
+                    l2 = np.linalg.norm(id_root - roots_2d[cam_num, n])
+                    id_score[n] += l2
 
-                target_index = np.argmin(id_score) # target_id
-                grid_centers[:, target_index, 3] = 2
-                pred[:, target_index,:,3] = 2
+            target_index = np.argmin(id_score) # target_id
+            grid_centers[:, target_index, 3] = 2
+            pred[:, target_index,:,3] = 2
 
 
 
@@ -96,7 +107,7 @@ class MultiPersonPoseNetSSV(nn.Module):
                 index = pred[:, n, 0, 3] >= 0
                 if torch.sum(index) > 0:
                     # grid_center shape : (b, n, 5), (1, 10, 5)
-                    if self._cal_distance(grid_centers[:, n, :2], distance) == False and target_index != n:
+                    if self._cal_root_distance(grid_centers[:, n, :2], distance) == False and target_index != n:
                         grid_centers[:, n, 3] = 1
                         pred[:, n, :, 3] = 1
                         continue
@@ -106,11 +117,14 @@ class MultiPersonPoseNetSSV(nn.Module):
                         pred[:, n, :, 3] = -1
                         continue
 
+                    if self._cal_pose_roa_distance(single_pose, roa_distance):
+                        ask_pose_id = single_pose
+
                     pred[:, n, :, 0:3] = single_pose.detach()
                     del single_pose
         torch.cuda.current_stream().wait_stream(stream)
 
-        return pred, all_heatmaps, grid_centers
+        return pred, all_heatmaps, grid_centers, tracking_id
 
 
 def  get_multi_person_pose_net(cfg, is_train=False, is_trt=False, engine_path=None):

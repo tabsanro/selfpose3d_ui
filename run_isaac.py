@@ -5,6 +5,7 @@ import sys
 import argparse
 from typing import List, Tuple, Union
 
+import numpy as np
 import torch
 from tqdm import tqdm
 import zmq
@@ -142,29 +143,37 @@ def main():
     mainWindow = PlotWidget()
     mainWindow.show()
 
+    tracking_id = np.array([])
+    reid_info = []
+
     # Inference
     for origin_frames, transed_frames, meta, current_frame in (pbar := tqdm(data_loader)):        
         # Set Results
         results = [] # 사람 수 만큼 결과 저장
 
-        message = json.loads(socket.recv().decode('utf-8'))  # 바이트를 문자열로 변환
-        distance = message['first_distance']
-        tracking_id = message['tracking_id']
+        # message = json.loads(socket.recv().decode('utf-8'))  # 바이트를 문자열로 변환
+        # distance = message['first_distance']
+        # roa_distnace = message['roa_distance']
 
-        if tracking_id:
-            next_id_result = [id for id in id_results if id['frame'] == current_frame and id['global_id'] in tracking_id]
-            if next_id_result:
-                id_result = next_id_result
+        distance = None
+        roa_distance = 800
+
+        next_reid_info = [id for id in id_results if id['frame'] == current_frame]
+        if next_reid_info:
+            reid_info = next_reid_info
 
         # Update distance
 
-        pred_3d, _, roots = pose_model(
+        pred_3d, _, roots, tracking_id = pose_model(
             views1=transed_frames,
             meta1=meta,
             distance=distance,
+            roa_distance=roa_distance,
             tracking_id=tracking_id,
-            id_result=id_result,
+            reid_info=reid_info,
         )
+
+        print(tracking_id)
 
         # post process
         pred_3d, roots, num_person, lod_list = post_process(pred_3d, roots)
@@ -191,9 +200,9 @@ def main():
 
         QtCore.QCoreApplication.processEvents()
         
-        # cloud 전송
-        serialized_data = pickle.dumps(results)
-        socket.send(serialized_data)
+        # # cloud 전송
+        # serialized_data = pickle.dumps(results)
+        # socket.send(serialized_data)
 
 if __name__ == '__main__':
     default_argv=[
