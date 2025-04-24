@@ -48,26 +48,29 @@ def get_sources_and_calibs(cfg, args) -> Union[Tuple[List[str], str], Tuple[None
         calib_path = os.path.join(args.source_folder, 'calibration')
         return sources, calib_path
 
-def post_process(preds_3d, grid_centers):
+def post_process(preds_3d, grid_centers, tracking_id, id_map_list):
     # POSE
     # -1 is not person
     # 0 is in lod2
     # 1 is in lod1
     # 2 for tracking id
     # we predict always total 10 persons
-    lod_list = []
+    lod_list = np.zeros(10)
     preds_3d = preds_3d[preds_3d[...,3]!=-1]  
     grid_centers = grid_centers[grid_centers[...,3]!=-1]
     # in_lod = preds_3d[preds_3d[...,3]==0].view(-1, 15, 5)
     in_lod = grid_centers[grid_centers[...,3]==0].view(-1, 5)
     num_person = in_lod.shape[0]
-    for value in grid_centers[...,3]:
+    for i, value in enumerate(grid_centers[...,3]):
         if value.item() == 0:
-            lod_list.append(2)
+            lod_list[i] = 2
         elif value.item() == 1:
-            lod_list.append(1)
-        elif value.item() == 2:
-            lod_list.append(3)
+            lod_list[i] = 1
+    
+    # tracking id
+    for i, value in enumerate(id_map_list):
+        if value in tracking_id:
+            lod_list[i] = 3
     
     if preds_3d.size(0) == 0:
         preds_3d = None # No person detected in lod2
@@ -130,8 +133,8 @@ def main():
         pose_model = temp_model
 
     # Open Re-ID data
-    with open("global_clustering_result.json", "r") as f:
-        id_results = json.load(f)
+    with open("zone1_reid.json", "r") as f:
+        reid_data = json.load(f)
 
      # Set ZMQ
     context = zmq.Context()
@@ -143,66 +146,74 @@ def main():
     mainWindow = PlotWidget()
     mainWindow.show()
 
-    tracking_id = np.array([])
+    tracking_id = []
     reid_info = []
 
+    results_all = []
+    
     # Inference
-    for origin_frames, transed_frames, meta, current_frame in (pbar := tqdm(data_loader)):        
-        # Set Results
-        results = [] # 사람 수 만큼 결과 저장
+    try:
+        for origin_frames, transed_frames, meta, current_frame in (pbar := tqdm(data_loader)):        
+            # Set Results
+            results = [] # 사람 수 만큼 결과 저장
 
-        # message = json.loads(socket.recv().decode('utf-8'))  # 바이트를 문자열로 변환
-        # distance = message['first_distance']
-        # roa_distnace = message['roa_distance']
+            # message = json.loads(socket.recv().decode('utf-8'))  # 바이트를 문자열로 변환
+            # distance = message['first_distance']
+            # roa_distnace = message['roa_distance']
 
-        distance = None
-        roa_distance = 800
+            distance = None
+            roa_distance = 35
 
-        next_reid_info = [id for id in id_results if id['frame'] == current_frame]
-        if next_reid_info:
-            reid_info = next_reid_info
+            frame_key = str(current_frame.item())
+            if frame_key in reid_data:
+                reid_info = reid_data[frame_key]
 
-        # Update distance
+            # Update distance
 
-        pred_3d, _, roots, tracking_id = pose_model(
-            views1=transed_frames,
-            meta1=meta,
-            distance=distance,
-            roa_distance=roa_distance,
-            tracking_id=tracking_id,
-            reid_info=reid_info,
-        )
+            pred_3d, _, roots, tracking_id, id_map_list = pose_model(
+                views1=transed_frames,
+                meta1=meta,
+                distance=distance,
+                roa_distance=roa_distance,
+                tracking_id=tracking_id,
+                reid_info=reid_info,
+            )
 
-        print(tracking_id)
+            print(tracking_id)
 
-        # post process
-        pred_3d, roots, num_person, lod_list = post_process(pred_3d, roots)
-        if roots is None:
-            continue
-        for num_roots in range(len(roots)):
-        # for lod, pred, root in zip(lod_list, pred_3d, roots):
-            temp_dict = {}
-            temp_dict['lod'] = lod_list[num_roots]
-            temp_dict['root'] = roots[num_roots]
-            if pred_3d is not None:
-                # WARNING: lod2인데 pose가 없는 경우도 있음
-                # 어차피 영상이다보니 이런 경우는 출력을 하지 않아도 시계열 연속성이 있는 것 처럼 보임
-                # 다음 프레임에서 pose를 딸 확률이 높기 때문에
-                try:
-                    temp_dict['pred'] = pred_3d[num_roots]
-                except:
+            # post process
+            pred_3d, roots, num_person, lod_list = post_process(pred_3d, roots, tracking_id, id_map_list)
+            if roots is None:
+                continue
+            for num_roots in range(len(roots)):
+            # for lod, pred, root in zip(lod_list, pred_3d, roots):
+                temp_dict = {}
+                temp_dict['lod'] = lod_list[num_roots]
+                temp_dict['root'] = roots[num_roots]
+                if pred_3d is not None:
+                    # WARNING: lod2인데 pose가 없는 경우도 있음
+                    # 어차피 영상이다보니 이런 경우는 출력을 하지 않아도 시계열 연속성이 있는 것 처럼 보임
+                    # 다음 프레임에서 pose를 딸 확률이 높기 때문에
+                    try:
+                        temp_dict['pred'] = pred_3d[num_roots]
+                    except:
+                        temp_dict['pred'] = None
+                else:
                     temp_dict['pred'] = None
-            else:
-                temp_dict['pred'] = None
-            results.append(temp_dict)
+                results.append(temp_dict)
 
-        mainWindow.pose_updater.update_pose(results)
+            mainWindow.pose_updater.update_pose(results)
 
-        QtCore.QCoreApplication.processEvents()
-        
-        # # cloud 전송
-        # serialized_data = pickle.dumps(results)
-        # socket.send(serialized_data)
+            QtCore.QCoreApplication.processEvents()
+            results_all.append(results)
+            # # cloud 전송
+            # serialized_data = pickle.dumps(results)
+            # socket.send(serialized_data)
+    
+    # Save results
+    except:
+        with open('zone1_results.pkl', 'wb') as f:
+            pickle.dump(results_all, f)
 
 if __name__ == '__main__':
     default_argv=[

@@ -121,9 +121,9 @@ class PlotWidget(QtWidgets.QMainWindow):
         self.ax.clear()
 
         for single_pose in results:
-            if single_pose['root'][3] == -1:
+            if single_pose['lod'] == 0:
                 continue
-            if single_pose['root'][3] == 1:
+            if single_pose['lod'] == 1:
                 x = single_pose['root'][0]
                 y = single_pose['root'][1]
                 z = single_pose['root'][2]
@@ -136,21 +136,18 @@ class PlotWidget(QtWidgets.QMainWindow):
             z = single_pose['pred'][:, 2]
 
             self.ax.scatter(x, y, z, c='r', marker='o')
-            if single_pose['root'][3] == 2:
-                for limb in LIMBS:
-                    joint1, joint2 = limb
-                    x_values = [single_pose['pred'][joint1][0], single_pose['pred'][joint2][0]]
-                    y_values = [single_pose['pred'][joint1][1], single_pose['pred'][joint2][1]]
-                    z_values = [single_pose['pred'][joint1][2], single_pose['pred'][joint2][2]]
-                    self.ax.plot(x_values, y_values, z_values, 'bo-')
-                continue
+
+            if single_pose['lod'] == 3:
+                skeleton_colr = 'bo-'
+            else:
+                skeleton_colr = 'ro-'
             
             for limb in LIMBS:
                 joint1, joint2 = limb
                 x_values = [single_pose['pred'][joint1][0], single_pose['pred'][joint2][0]]
                 y_values = [single_pose['pred'][joint1][1], single_pose['pred'][joint2][1]]
                 z_values = [single_pose['pred'][joint1][2], single_pose['pred'][joint2][2]]
-                self.ax.plot(x_values, y_values, z_values, 'ro-')
+                self.ax.plot(x_values, y_values, z_values, skeleton_colr)
 
         self.ax.set_xlabel('X Label')
         self.ax.set_ylabel('Y Label')
