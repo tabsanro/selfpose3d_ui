@@ -14,7 +14,6 @@ from modules.focus.tensorrt import export_tensorrt, load_tensorrt_model
 from modules.SelfPose3d.lib.models.multi_person_posenet_ssv import get_multi_person_pose_net
 from modules.SelfPose3d.lib.core.config import config as sp3d_config
 from modules.SelfPose3d.lib.core.config import update_config as update_sp3d_config
-from modules.realsense.realsense import set_pipelines
 from modules.gui.plot_widget import PlotWidget, DISTANCE
 
 CWD = os.getcwd()
@@ -26,6 +25,7 @@ def get_parser():
     parser.add_argument("--source_folder", default=None, help="source folder name", type=str)
     parser.add_argument("--tensorrt", action="store_true", default=False, help="If set, the program will use tensorrt.")
     parser.add_argument("--webcam", action="store_true", default=False, help="If set, the program will use webcam.")
+    parser.add_argument("--inference_root", action="store_true", default=False, help="If set, the programe will inference until rootnet")
     args, rest = parser.parse_known_args()
     if args.webcam:
         parser.add_argument("--webcam_info", type=str, default=None, help="Webcam info file path.")
@@ -85,6 +85,7 @@ def main():
     sources, calib_path = get_sources_and_calibs(focus_config, args)
     pipelines = None
     if args.webcam:
+        from modules.realsense.realsense import set_pipelines
         pipelines = set_pipelines(args.webcam_info)
     
     # Set CUDA device
@@ -128,7 +129,7 @@ def main():
     mainWindow.show()
 
     # Inference
-    for origin_frames, transed_frames, meta in (pbar := tqdm(data_loader)):
+    for origin_frames, transed_frames, meta, current_frame in (pbar := tqdm(data_loader)):
         # Update distance
         distance = mainWindow.pose_updater.distance
         
@@ -137,7 +138,7 @@ def main():
         # 사람 = {lod , root, pred, age, gender}
 
         # Pose Estimation
-        pred_3d, _, roots = pose_model(
+        pred_3d, _, roots, current_frame = pose_model(
             views1=transed_frames,
             meta1=meta,
             distance=distance,
@@ -172,6 +173,7 @@ if __name__ == '__main__':
         '--cfg_focus', 'configs/focus.yaml',
         '--source_folder', 'modules/SelfPose3d/data_0325',
         '--tensorrt',
+        '--inference_root',
     ]
     # CLI 인자가 없을 때 기본 argv를 사용하도록 함
     if len(sys.argv) == 1:

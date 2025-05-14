@@ -102,27 +102,46 @@ class MultiPersonPoseNetSSV(nn.Module):
 
                     
 
+        # for n in range(self.num_cand):
+        #     with torch.cuda.stream(stream):
+        #         index = pred[:, n, 0, 3] >= 0
+        #         if torch.sum(index) > 0:
+        #             # grid_center shape : (b, n, 5), (1, 10, 5)
+        #             if self._cal_root_distance(grid_centers[:, n, :2], distance) == False and target_index != n:
+        #                 grid_centers[:, n, 3] = 1
+        #                 pred[:, n, :, 3] = 1
+        #                 continue
+        #             single_pose = self.pose_net(all_heatmaps, meta1, grid_centers[:, n])
+        #             if min(single_pose[:,8,2], single_pose[:,14,2]) < - 50 or min(single_pose[:,8,2], single_pose[:,14,2]) > 250:
+        #                 grid_centers[:, n, 3] = -1
+        #                 pred[:, n, :, 3] = -1
+        #                 continue
+
+        #             if self._cal_pose_roa_distance(single_pose, roa_distance):
+        #                 ask_pose_id = single_pose
+
+        #             pred[:, n, :, 0:3] = single_pose.detach()
+        #             del single_pose
+        # torch.cuda.current_stream().wait_stream(stream)
+
         for n in range(self.num_cand):
-            with torch.cuda.stream(stream):
-                index = pred[:, n, 0, 3] >= 0
-                if torch.sum(index) > 0:
-                    # grid_center shape : (b, n, 5), (1, 10, 5)
-                    if self._cal_root_distance(grid_centers[:, n, :2], distance) == False and target_index != n:
-                        grid_centers[:, n, 3] = 1
-                        pred[:, n, :, 3] = 1
-                        continue
-                    single_pose = self.pose_net(all_heatmaps, meta1, grid_centers[:, n])
-                    if min(single_pose[:,8,2], single_pose[:,14,2]) < - 50 or min(single_pose[:,8,2], single_pose[:,14,2]) > 250:
-                        grid_centers[:, n, 3] = -1
-                        pred[:, n, :, 3] = -1
-                        continue
+            index = pred[:, n, 0, 3] >= 0
+            if torch.sum(index) > 0:
+                # grid_center shape : (b, n, 5), (1, 10, 5)
+                if self._cal_root_distance(grid_centers[:, n, :2], distance) == False and target_index != n:
+                    grid_centers[:, n, 3] = 1
+                    pred[:, n, :, 3] = 1
+                    continue
+                single_pose = self.pose_net(all_heatmaps, meta1, grid_centers[:, n])
+                if min(single_pose[:,8,2], single_pose[:,14,2]) < - 50 or min(single_pose[:,8,2], single_pose[:,14,2]) > 250:
+                    grid_centers[:, n, 3] = -1
+                    pred[:, n, :, 3] = -1
+                    continue
 
-                    if self._cal_pose_roa_distance(single_pose, roa_distance):
-                        ask_pose_id = single_pose
+                if self._cal_pose_roa_distance(single_pose, roa_distance):
+                    ask_pose_id = single_pose
 
-                    pred[:, n, :, 0:3] = single_pose.detach()
-                    del single_pose
-        torch.cuda.current_stream().wait_stream(stream)
+                pred[:, n, :, 0:3] = single_pose.detach()
 
         return pred, all_heatmaps, grid_centers, tracking_id
 
